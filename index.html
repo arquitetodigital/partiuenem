@@ -32,7 +32,7 @@
   --maxw:1180px;
 }
 html{scroll-behavior:smooth;}
-body{font-family:'Inter',sans-serif;color:var(--text);background:var(--bg);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+body{padding-top:var(--topbar-h, 40px);font-family:'Inter',sans-serif;color:var(--text);background:var(--bg);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 h1,h2,h3,h4{font-family:'Poppins',sans-serif;line-height:1.15;letter-spacing:-0.01em;}
 img{max-width:100%;display:block;}
 a{text-decoration:none;color:inherit;}
@@ -65,14 +65,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .pulse{animation:pulse 2.2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{box-shadow:0 8px 20px rgba(15,95,168,.32);}50%{box-shadow:0 8px 28px rgba(46,168,240,.55);}}
 
-/* top urgency bar */
-.topbar{background:var(--primary-darker);color:#fff;font-size:13px;font-weight:600;padding:9px 16px;text-align:center;position:relative;z-index:60;}
-.topbar .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px;animation:blink 1.4s infinite;}
+/* top urgency bar — FIXA no topo (desktop e mobile), visual de alerta vermelho */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:80;
+  background:linear-gradient(90deg,#B91C1C,#DC2626 45%,#B91C1C);
+  background-size:200% 100%;animation:topbarFlash 3s ease-in-out infinite;
+  color:#fff;font-size:13px;font-weight:700;
+  padding:10px 16px calc(10px + env(safe-area-inset-top,0px));
+  text-align:center;box-shadow:0 4px 14px rgba(185,28,28,.45);
+}
+@keyframes topbarFlash{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+.topbar .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;margin-right:6px;animation:blink 1s infinite;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-.topbar b{color:#FFD166;}
+.topbar b{color:#FFE066;}
+.topbar .tb-clock{display:inline-flex;gap:4px;margin-left:8px;font-variant-numeric:tabular-nums;}
+.topbar .tb-clock span{background:rgba(0,0,0,.28);border-radius:6px;padding:2px 6px;font-weight:800;}
+@media(max-width:600px){.topbar{font-size:11.5px;line-height:1.4;padding:8px 10px calc(8px + env(safe-area-inset-top,0px));} .topbar .tb-clock{margin-left:0;margin-top:2px;}}
 
 /* header */
-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);transition:box-shadow .3s ease;}
+header{position:sticky;top:var(--topbar-h, 40px);z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);transition:box-shadow .3s ease;}
 header.scrolled{box-shadow:var(--shadow-sm);}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:var(--maxw);margin:0 auto;}
 .logo{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:800;font-size:19px;color:var(--primary-darker);}
@@ -459,7 +470,7 @@ src="https://www.facebook.com/tr?id=1038495935667524&ev=PageView&noscript=1"/></
 </head>
 <body>
 
-<div class="topbar"><span class="dot"></span> CONTAGEM REGRESSIVA ENEM 2026 — Faltam <b id="topbar-days">--</b> dias · Acesso imediato ao app</div>
+<div class="topbar"><span class="dot"></span>⚠️ CONTAGEM REGRESSIVA ENEM 2026 — Faltam <b id="topbar-days">--</b> dias <span class="tb-clock"><span id="topbar-hours">--</span>h<span id="topbar-min">--</span>m<span id="topbar-sec">--</span>s</span> · Acesso imediato ao app</div>
 
 <header id="header">
   <div class="nav">
@@ -987,6 +998,9 @@ function updateCountdown(){
   document.getElementById('cd-min').textContent = pad(mins);
   document.getElementById('cd-sec').textContent = pad(secs);
   ['topbar-days','hero-days','final-days'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = days; });
+  const tbH = document.getElementById('topbar-hours'); if (tbH) tbH.textContent = pad(hours);
+  const tbM = document.getElementById('topbar-min'); if (tbM) tbM.textContent = pad(mins);
+  const tbS = document.getElementById('topbar-sec'); if (tbS) tbS.textContent = pad(secs);
   const phoneDays = document.getElementById('phone-days');
   if (phoneDays) phoneDays.textContent = days + ' dias';
 }
@@ -1147,6 +1161,90 @@ setInterval(updateCountdown, 1000);
   });
 })();
 
+</script>
+
+<script>
+/* ==========================================================================
+   TOPBAR FIXO — sincroniza a altura real da barra vermelha (funciona em
+   qualquer tamanho de tela/quebra de linha) para o header e o body
+   compensarem o espaço corretamente. Não altera nenhum código existente.
+   ========================================================================== */
+(function(){
+  function syncTopbarHeight(){
+    const tb = document.querySelector('.topbar');
+    if (!tb) return;
+    const h = tb.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+  syncTopbarHeight();
+  window.addEventListener('load', syncTopbarHeight);
+  window.addEventListener('resize', syncTopbarHeight);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(syncTopbarHeight); }
+})();
+
+/* ==========================================================================
+   FBCLID / UTM → CHECKOUT — propaga os parâmetros de rastreamento do anúncio
+   (fbclid, utm_*, gclid, ttclid) da URL da LP para TODOS os links de
+   checkout (Hotmart), incluindo os que são preenchidos dinamicamente no
+   pop-up de upsell. Resolve o problema do fbclid não aparecer no checkout.
+   ========================================================================== */
+(function(){
+  const TRACKED_PARAMS = ['fbclid','utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id','gclid','ttclid'];
+
+  function getIncomingParams(){
+    const params = new URLSearchParams(window.location.search);
+    const out = {};
+    TRACKED_PARAMS.forEach(function(k){
+      const v = params.get(k);
+      if (v) out[k] = v;
+    });
+    return out;
+  }
+  const incoming = getIncomingParams();
+
+  // guarda os parâmetros também em sessionStorage, caso o usuário navegue
+  // internamente pela página antes de clicar no checkout
+  try {
+    if (Object.keys(incoming).length){
+      sessionStorage.setItem('pe_tracking_params', JSON.stringify(incoming));
+    }
+  } catch(e){}
+  function getStoredParams(){
+    try {
+      const raw = sessionStorage.getItem('pe_tracking_params');
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+
+  function enrichCheckoutLink(el){
+    if (!el || !el.getAttribute) return;
+    const href = el.getAttribute('href') || '';
+    if (href.indexOf('pay.hotmart.com') === -1) return;
+    try {
+      const url = new URL(href, window.location.href);
+      const tp = Object.assign({}, getStoredParams(), incoming);
+      Object.keys(tp).forEach(function(k){
+        if (!url.searchParams.has(k)) url.searchParams.set(k, tp[k]);
+      });
+      el.setAttribute('href', url.toString());
+    } catch(e){}
+  }
+
+  function enrichAllCheckoutLinks(){
+    document.querySelectorAll('a[href*="pay.hotmart.com"]').forEach(enrichCheckoutLink);
+  }
+
+  // enriquece assim que a página carrega...
+  enrichAllCheckoutLinks();
+  window.addEventListener('load', enrichAllCheckoutLinks);
+
+  // ...e também no exato momento do clique, cobrindo links preenchidos
+  // dinamicamente (ex.: os botões do pop-up de upsell)
+  document.addEventListener('click', function(e){
+    const link = e.target.closest('a[href*="pay.hotmart.com"]');
+    if (link) enrichCheckoutLink(link);
+  }, true);
+})();
 </script>
 </body>
 </html>
