@@ -3,6 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ===== Meta Pixel Code (topo do <head>: carrega antes de tudo) ===== -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+
+window.PIXEL_ID = '1038495935667524';
+
+/* --- fbclid da URL -> cookie _fbc (permite ao Hotmart/CAPI atribuir a venda ao anuncio) --- */
+(function(){
+  try{
+    var p = new URLSearchParams(location.search);
+    var fbclid = p.get('fbclid');
+    if (fbclid && document.cookie.indexOf('_fbc=') === -1){
+      var fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+      document.cookie = '_fbc=' + fbc + ';path=/;max-age=7776000;SameSite=Lax';
+    }
+  }catch(e){}
+})();
+
+/* --- event_id do PageView compartilhado com o servidor (deduplicacao browser x API) --- */
+window.PE_PAGEVIEW_EID = 'pv.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2,10);
+
+fbq('init', window.PIXEL_ID);
+fbq('track', 'PageView', {}, { eventID: window.PE_PAGEVIEW_EID });
+
+/* --- Rede a redisparo do PageView quando o usuario VOLTA do checkout (bfcache).
+       Sem isso a sessao de retorno nao gera visualizacao de pagina. --- */
+window.addEventListener('pageshow', function(ev){
+  if (!ev.persisted) return;
+  var eid = 'pv.' + Date.now().toString(36) + '.' + Math.random().toString(36).slice(2,10);
+  try { fbq('track', 'PageView', {}, { eventID: eid }); } catch(e){}
+});
+
+/* --- Fallback: se o fbevents.js for bloqueado (adblock/ITP/rede), o PageView
+       ainda chega ao Meta por beacon de imagem no dominio do site. --- */
+setTimeout(function(){
+  try{
+    if (window.fbq && window.fbq.callMethod) return; /* pixel carregou normalmente */
+    var img = new Image(1,1);
+    img.referrerPolicy = 'no-referrer-when-downgrade';
+    img.src = 'https://www.facebook.com/tr?id=1038495935667524&ev=PageView&noscript=1'
+            + '&eid=' + encodeURIComponent(window.PE_PAGEVIEW_EID)
+            + '&rl=' + encodeURIComponent(location.href);
+  }catch(e){}
+}, 2500);
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+src="https://www.facebook.com/tr?id=1038495935667524&ev=PageView&noscript=1"/></noscript>
+<!-- ===== End Meta Pixel Code ===== -->
 <title>PARTIU ENEM! — Sua rota de 80 dias para o ENEM 2026</title>
 <meta name="description" content="Transforme a reta final em uma rota de estudos inteligente feita para a sua realidade. Diagnóstico, rota de 80 dias e missões diárias no seu celular.">
 <meta name="theme-color" content="#2EA8F0">
@@ -474,20 +526,6 @@ footer hr{border:none;border-top:1px solid rgba(255,255,255,.12);margin:18px 0;}
 @media(max-width:600px){.screens-row{gap:7px;} .screen-item figcaption b{font-size:10px;} .screen-item figcaption{font-size:0;} .screen-item figcaption b{font-size:10px;}}
 </style>
 
-<!-- ===== Meta Pixel Code ===== -->
-<script>
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-document,'script','https://connect.facebook.net/en_US/fbevents.js');
-window.PIXEL_ID = '1038495935667524';
-fbq('init', window.PIXEL_ID);
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none" alt=""
-src="https://www.facebook.com/tr?id=1038495935667524&ev=PageView&noscript=1"/></noscript>
-<!-- ===== End Meta Pixel Code ===== -->
 </head>
 <body>
 
@@ -1052,6 +1090,12 @@ setInterval(updateCountdown, 1000);
     });
 
     if (isCheckout){
+      /* segura a navegacao ~300ms para o beacon do InitiateCheckout sair do
+         browser antes do unload (antes o evento morria junto com a pagina) */
+      if (el.tagName === 'A' && href && !el.target){
+        e.preventDefault();
+        setTimeout(function(){ window.location.href = el.getAttribute('href') || href; }, 300);
+      }
       track('InitiateCheckout', {
         content_name: OFFER_NAME,
         content_category: 'Educacao/ENEM',
