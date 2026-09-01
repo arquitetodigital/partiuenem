@@ -29,7 +29,21 @@
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1038495935667524');
-    fbq('track', 'PageView');
+
+    /* ID unico por carregamento de pagina -> deduplica PageView e evita contagem dupla */
+    window.__pvEventId = 'pv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+    fbq('track', 'PageView', {}, { eventID: window.__pvEventId });
+
+    /* ViewContent so depois que a pagina realmente renderizou (sinal de Landing Page View real) */
+    window.addEventListener('load', function () {
+      if (typeof fbq !== 'function') return;
+      fbq('track', 'ViewContent', {
+        content_name: 'LP PARTIU ENEM 2026',
+        content_type: 'product',
+        value: 17.00,
+        currency: 'BRL'
+      }, { eventID: 'vc_' + window.__pvEventId });
+    });
   </script>
   <!-- End Meta Pixel Code -->
 
@@ -2463,28 +2477,48 @@
       }
     })();
 
-    /* ─── 2. EVENTO INITIATE CHECKOUT NO META PIXEL AO CLICAR EM QUALQUER CTA ─── */
-    /* CORRIGIDO: existem 5 botões de CTA na página (.cta-link). Sem essa trava,
-       cada clique em QUALQUER um deles disparava um InitiateCheckout novo — um
-       único visitante clicando em 3-4 botões diferentes gerava 3-4 eventos
-       falsos, inflando muito a métrica no Gerenciador de Anúncios. Agora o
-       evento dispara no máximo 1 vez por visita, não importa quantos botões
-       a pessoa clicar. */
-    (function () {
-      var initiateCheckoutJaEnviado = false;
-      document.querySelectorAll('.cta-link').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          if (initiateCheckoutJaEnviado) return;
-          initiateCheckoutJaEnviado = true;
-          if (typeof fbq === 'function') {
-            fbq('track', 'InitiateCheckout', {
-              content_name: 'Recuperacao Completa PARTIU ENEM 2026',
-              value: 17.00,
-              currency: 'BRL'
-            });
-          }
-        });
-      });
+    /* ─── 2. INITIATE CHECKOUT (1x POR SESSAO, COM DEDUPLICACAO) ─── */
+    (function initCheckoutTracking() {
+      var STORAGE_KEY = 'pe_ic_fired';
+      var COOLDOWN_MS = 30 * 60 * 1000; /* 30 min: recliques nao viram novos eventos */
+      var firedInThisPage = false;
+
+      function alreadyFired() {
+        if (firedInThisPage) return true;
+        try {
+          var raw = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
+          if (!raw) return false;
+          return (Date.now() - parseInt(raw, 10)) < COOLDOWN_MS;
+        } catch (e) { return false; }
+      }
+
+      function markFired() {
+        firedInThisPage = true;
+        try {
+          var now = String(Date.now());
+          sessionStorage.setItem(STORAGE_KEY, now);
+          localStorage.setItem(STORAGE_KEY, now);
+        } catch (e) {}
+      }
+
+      /* Um unico listener delegado: evita registro duplicado se o script rodar 2x */
+      if (window.__peIcBound) return;
+      window.__peIcBound = true;
+
+      document.addEventListener('click', function (ev) {
+        var link = ev.target && ev.target.closest ? ev.target.closest('.cta-link') : null;
+        if (!link) return;
+        if (alreadyFired()) return;
+        if (typeof fbq !== 'function') return;
+
+        markFired();
+        fbq('track', 'InitiateCheckout', {
+          content_name: 'Recuperacao Completa PARTIU ENEM 2026',
+          content_type: 'product',
+          value: 17.00,
+          currency: 'BRL'
+        }, { eventID: 'ic_' + (window.__pvEventId || Date.now()) });
+      }, true);
     })();
 
     /* ─── 3. CONTAGEM REGRESSIVA PARA O ENEM 2026 ─── */
