@@ -31,10 +31,12 @@
 
   <style>
     body {
-      background-color: #141822;
+      background-color: #060a13;
       color: #f8fafc;
       font-family: 'Inter', sans-serif;
     }
+    .hero-giant { font-size: clamp(3rem, 11.5vw, 6.2rem) !important; line-height: .95 !important; letter-spacing: -0.005em; }
+    .hero-glow { position: absolute; left: 50%; top: -260px; transform: translateX(-50%); width: 900px; height: 560px; border-radius: 50%; background: radial-gradient(closest-side, rgba(59,130,246,.22), transparent 70%); pointer-events: none; }
     .font-display {
       font-family: 'Anton', sans-serif;
       letter-spacing: 0.02em;
@@ -74,6 +76,39 @@
     .legal-modal__body { padding: 24px; overflow-y: auto; font-size: 13.5px; line-height: 1.6; color: #525252; text-align: left; }
     .legal-modal__body h4 { font-size: 14.5px; font-weight: 700; color: #262327; margin: 16px 0 6px; }
     .legal-modal__updated { margin-top: 20px; font-size: 11.5px; color: #8A8A8A; }
+
+    /* ─── POPUP DE PROVA SOCIAL (compras recentes) ─── */
+    .proof-pop {
+      position: fixed; left: 16px; bottom: 16px; z-index: 9998;
+      display: flex; align-items: center; gap: 12px;
+      background: #141822; border: 1px solid rgba(255,255,255,.12);
+      border-left: 4px solid #f6c84c;
+      border-radius: 14px; padding: 12px 38px 12px 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.55);
+      max-width: min(92vw, 360px);
+      transform: translateY(140%); opacity: 0;
+      transition: transform .45s cubic-bezier(.2,.9,.3,1.2), opacity .35s ease;
+      pointer-events: none;
+    }
+    .proof-pop.is-show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+    .proof-pop__img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: #0b1b33; }
+    .proof-pop__txt { font-size: 12.5px; line-height: 1.45; color: #e2e8f0; }
+    .proof-pop__txt strong { color: #ffffff; }
+    .proof-pop__time { display: block; margin-top: 3px; font-size: 10.5px; color: #94a3b8; }
+    .proof-pop__x {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; color: #94a3b8; font-size: 14px;
+      cursor: pointer; padding: 2px 4px; line-height: 1;
+    }
+    .proof-pop__x:hover { color: #ffffff; }
+    .proof-pop__badge {
+      position: absolute; top: -10px; left: -6px;
+      background: #22c55e; border-radius: 9999px;
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    }
+    .proof-pop__badge svg { width: 11px; height: 11px; fill: #ffffff; }
+    @media (max-width: 480px) { .proof-pop { left: 10px; bottom: 10px; padding: 10px 34px 10px 10px; } }
   </style>
 </head>
 <body class="min-h-screen antialiased selection:bg-gold selection:text-navy-900">
@@ -114,7 +149,7 @@
 
     <!-- 1. HERO SECTION -->
     <section class="relative overflow-hidden px-6 pt-8 pb-16 text-center md:pt-12 md:pb-24">
-      <div class="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-[450px] w-[550px] rounded-full bg-blue-500/15 blur-[120px]"></div>
+      <div class="hero-glow"></div>
       <div class="pointer-events-none absolute right-1/4 top-1/3 h-64 w-64 rounded-full bg-yellow-500/10 blur-[90px]"></div>
 
       <div class="relative mx-auto max-w-md md:max-w-xl">
@@ -123,9 +158,9 @@
           <span class="text-xs font-semibold tracking-wider text-blue-400 uppercase">Material Digital • Acesso Imediato</span>
         </div>
 
-        <h1 class="mt-6 font-display text-4xl leading-[1.05] tracking-tight uppercase sm:text-5xl md:text-6xl text-white">
-          Aumente sua nota no ENEM <span class="text-blue-500">estudando menos</span> — e do jeito certo
-        </h1>
+      <h1 class="mt-6 font-display hero-giant uppercase text-white" style="font-size: 64px !important;">
+  Aumente sua nota no ENEM <span class="text-blue-500">estudando menos</span> — e do jeito certo
+</h1>
 
         <p class="mt-6 text-sm leading-relaxed text-slate-300 sm:text-base">
           O <strong class="text-white">PARTIU ENEM!</strong> reúne questões de todas as matérias, redações nota 1000, mapas mentais, App com cronograma de 80 dias e bônus exclusivos em um só pacote. Direto no seu celular, sem enrolação.
@@ -180,7 +215,7 @@
     </section>
 
     <!-- 2. PAIN POINTS -->
-    <section class="rounded-t-[40px] bg-slate-50 px-6 py-16 text-navy-900">
+    <section class="rounded-t-[40px] bg-slate-50 px-6 py-16 text-navy-900" style="position:relative;z-index:10">
       <div class="mx-auto max-w-md space-y-8">
         <div>
           <h2 class="font-display text-3xl tracking-tight uppercase sm:text-4xl text-slate-900">
@@ -1237,6 +1272,67 @@
       const el = document.getElementById('modal-' + id);
       if (el) el.classList.remove('is-open');
     }
+
+    // ─── Prova social: notificações de compra ───
+    (function () {
+      var compradores = [
+        ['Mariana Silva', 'São Paulo, SP'],
+        ['João Pedro Santos', 'Belo Horizonte, MG'],
+        ['Ana Beatriz Costa', 'Fortaleza, CE'],
+        ['Lucas Oliveira', 'Rio de Janeiro, RJ'],
+        ['Gabriela Ferreira', 'Curitiba, PR'],
+        ['Rafael Almeida', 'Salvador, BA'],
+        ['Isabela Souza', 'Recife, PE'],
+        ['Pedro Henrique Lima', 'Brasília, DF'],
+        ['Larissa Rodrigues', 'Manaus, AM'],
+        ['Thiago Barbosa', 'Porto Alegre, RS'],
+        ['Camila Nascimento', 'Belém, PA'],
+        ['Matheus Cardoso', 'Goiânia, GO'],
+        ['Fernanda Ribeiro', 'Natal, RN'],
+        ['Gustavo Martins', 'Campinas, SP'],
+        ['Juliana Araújo', 'Vitória, ES'],
+        ['Bruno Carvalho', 'Florianópolis, SC'],
+        ['Beatriz Moreira', 'João Pessoa, PB'],
+        ['Vinícius Teixeira', 'Ribeirão Preto, SP'],
+        ['Amanda Freitas', 'Maceió, AL'],
+        ['Diego Fernandes', 'São Luís, MA'],
+        ['Carolina Duarte', 'Santos, SP'],
+        ['Felipe Rocha', 'Aracaju, SE'],
+        ['Letícia Cavalcanti', 'Teresina, PI'],
+        ['Rodrigo Nogueira', 'Campo Grande, MS'],
+        ['Patrícia Mendes', 'Cuiabá, MT']
+      ];
+      var minutos = [2, 3, 4, 5, 7, 9, 11, 14, 18, 23, 27, 31];
+      var idx = 0, hiddenByUser = false;
+
+      var pop = document.createElement('div');
+      pop.className = 'proof-pop';
+      pop.setAttribute('role', 'status');
+      pop.innerHTML =
+        '<div class="proof-pop__badge"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>' +
+        '<img class="proof-pop__img" src="MOCKUP_APP.png" alt="" onerror="this.style.display=\'none\'">' +
+        '<div class="proof-pop__txt"><strong class="proof-name"></strong> <span class="proof-city"></span> garantiu o <strong>PARTIU ENEM! 2026</strong><span class="proof-pop__time"></span></div>' +
+        '<button class="proof-pop__x" aria-label="Fechar notificação">&times;</button>';
+      document.body.appendChild(pop);
+
+      pop.querySelector('.proof-pop__x').addEventListener('click', function () {
+        hiddenByUser = true;
+        pop.classList.remove('is-show');
+      });
+
+      function showPop() {
+        if (hiddenByUser) return;
+        var c = compradores[idx % compradores.length];
+        idx++;
+        pop.querySelector('.proof-name').textContent = c[0];
+        pop.querySelector('.proof-city').textContent = '(' + c[1] + ')';
+        pop.querySelector('.proof-pop__time').textContent = 'há ' + minutos[Math.floor(Math.random() * minutos.length)] + ' minutos • compra verificada';
+        pop.classList.add('is-show');
+        setTimeout(function () { pop.classList.remove('is-show'); }, 5200);
+        setTimeout(showPop, 14000 + Math.random() * 8000);
+      }
+      setTimeout(showPop, 4500);
+    })();
   </script>
 </body>
 </html>
