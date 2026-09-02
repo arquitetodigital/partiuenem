@@ -158,7 +158,7 @@
           <span class="text-xs font-semibold tracking-wider text-blue-400 uppercase">Material Digital • Acesso Imediato</span>
         </div>
 
-      <h1 class="mt-6 font-display hero-giant uppercase text-white" style="font-size: 64px !important;">
+        <h1 class="mt-6 font-display hero-giant uppercase text-white" style="font-size: 64px !important;">
   Aumente sua nota no ENEM <span class="text-blue-500">estudando menos</span> — e do jeito certo
 </h1>
 
@@ -1254,6 +1254,62 @@
         console.warn('Meta Pixel Tracking Error:', e);
       }
     }
+
+    // Repassa parâmetros de rastreamento (fbclid, gclid, utms, src, sck) para o checkout da Hotmart
+    (function propagateTrackingParams() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+
+        // Se não veio fbclid na URL, tenta recuperar do cookie _fbc (Meta) ou do storage
+        if (!params.get('fbclid')) {
+          var fbcMatch = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/);
+          if (fbcMatch) {
+            var fbcParts = decodeURIComponent(fbcMatch[1]).split('.');
+            if (fbcParts.length >= 4 && fbcParts[3]) {
+              params.set('fbclid', fbcParts[3]);
+            }
+          }
+        }
+        if (!params.get('fbclid')) {
+          try {
+            var saved = localStorage.getItem('partiu_fbclid');
+            if (saved) params.set('fbclid', saved);
+          } catch (e) {}
+        } else {
+          try { localStorage.setItem('partiu_fbclid', params.get('fbclid')); } catch (e) {}
+        }
+
+        // Monta a query só com parâmetros úteis de rastreamento
+        var allowed = ['fbclid','gclid','ttclid','src','sck','utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id'];
+        var qs = new URLSearchParams();
+        allowed.forEach(function(k) {
+          var v = params.get(k);
+          if (v) qs.set(k, v);
+        });
+        if (!qs.toString()) return;
+
+        function updateCheckoutLinks() {
+          document.querySelectorAll('a[href*="pay.hotmart.com"]').forEach(function(a) {
+            try {
+              var url = new URL(a.href);
+              qs.forEach(function(v, k) { url.searchParams.set(k, v); });
+              a.href = url.toString();
+            } catch (e) {}
+          });
+        }
+
+        updateCheckoutLinks();
+        // Reforço: aplica de novo no primeiro clique, caso algum link tenha sido criado depois
+        document.addEventListener('click', function once(e) {
+          if (e.target.closest && e.target.closest('a[href*="pay.hotmart.com"]')) {
+            updateCheckoutLinks();
+            document.removeEventListener('click', once, true);
+          }
+        }, { capture: true });
+      } catch (e) {
+        console.warn('Tracking params propagation error:', e);
+      }
+    })();
 
     // Fallback: listener global para qualquer link do checkout do Hotmart
     document.addEventListener('click', function(e) {
