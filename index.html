@@ -15,16 +15,13 @@
 
     window.__PIXEL_ID__ = '1038495935667524';
 
-    // event_id estavel por sessao (dedupe com CAPI / pixel da Hotmart)
+    // event_id UNICO por disparo (dedupe com CAPI/Hotmart, sem colapsar eventos repetidos)
     window.__evtId = function (name) {
       try {
-        var k = 'evt_' + name;
-        var v = sessionStorage.getItem(k);
-        if (!v) {
-          v = name + '.' + Date.now() + '.' + Math.random().toString(36).slice(2, 10);
-          sessionStorage.setItem(k, v);
-        }
-        return v;
+        var rnd = (window.crypto && window.crypto.randomUUID)
+          ? window.crypto.randomUUID()
+          : (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+        return name + '.' + rnd;
       } catch (e) { return name + '.' + Date.now(); }
     };
 
@@ -131,16 +128,51 @@
 
   <style>
     /* Relatos reais — seção adicionada entre prova social e oferta */
-    .relatos-alunos { padding: 4rem 1.5rem 5rem; background: rgba(8, 22, 46, .6); }
-    .relatos-alunos__inner { width: 100%; max-width: 72rem; margin: 0 auto; }
-    .relatos-alunos__title { margin: 0 auto 2.5rem; max-width: 46rem; color: #fff; font-family: Anton, sans-serif; font-size: 1.75rem; line-height: 1.15; text-align: center; text-transform: uppercase; }
+    .relatos-alunos { position: relative; overflow: hidden; padding: 4.5rem 1.25rem 5.5rem; background:
+      radial-gradient(120% 90% at 50% -10%, rgba(96,165,250,.18) 0%, rgba(8,22,46,0) 60%),
+      linear-gradient(180deg, rgba(6,17,36,.95) 0%, rgba(8,22,46,.75) 45%, rgba(6,17,36,.95) 100%); }
+    .relatos-alunos::before { content: ""; position: absolute; inset: -20% -10% auto -10%; height: 70%;
+      background: radial-gradient(50% 60% at 20% 40%, rgba(246,200,76,.12), transparent 70%),
+                  radial-gradient(45% 55% at 80% 30%, rgba(59,130,246,.16), transparent 70%);
+      filter: blur(6px); pointer-events: none; }
+    .relatos-alunos__inner { position: relative; z-index: 1; width: 100%; max-width: 72rem; margin: 0 auto; }
+    .relatos-alunos__title { margin: 0 auto .75rem; max-width: 46rem; color: #fff; font-family: Anton, sans-serif; font-size: 1.75rem; line-height: 1.15; text-align: center; text-transform: uppercase; }
     .relatos-alunos__title span { color: #60a5fa; }
-    .relatos-alunos__grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 1.5rem; }
-    .relatos-alunos__figure { width: 100%; max-width: 28rem; margin: 0 auto; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 1rem; background: #050709; box-shadow: 0 18px 45px rgba(0,0,0,.3); }
-    .relatos-alunos__image { display: block; width: 100%; height: auto; }
+    .relatos-alunos__sub { margin: 0 auto 3rem; max-width: 34rem; text-align: center; font-size: .875rem; line-height: 1.6; color: #94a3b8; }
+    .relatos-alunos__grid { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-items: start; gap: 3rem; }
+
+    /* Moldura de iPhone flutuante */
+    .phone { position: relative; width: 100%; max-width: 15.5rem; margin: 0 auto; padding: .55rem .5rem; border-radius: 2.25rem;
+      background: linear-gradient(160deg, #3a4453 0%, #11161f 35%, #0a0d13 65%, #2b3441 100%);
+      box-shadow: 0 2px 0 rgba(255,255,255,.18) inset, 0 0 0 1px rgba(255,255,255,.08),
+                  0 30px 60px -18px rgba(0,0,0,.85), 0 0 45px -12px rgba(59,130,246,.35);
+      animation: phoneFloat 6s ease-in-out infinite; transition: transform .35s ease, box-shadow .35s ease; }
+    .phone::after { content: ""; position: absolute; left: 8%; right: 8%; bottom: -1.75rem; height: 1.5rem; border-radius: 50%;
+      background: radial-gradient(50% 50% at 50% 50%, rgba(0,0,0,.65), transparent 70%); filter: blur(6px); pointer-events: none; }
+    .phone__notch { position: absolute; top: .55rem; left: 50%; transform: translateX(-50%); z-index: 2;
+      width: 38%; height: 1.1rem; border-radius: 0 0 .9rem .9rem; background: #05070b; }
+    .phone__screen { position: relative; overflow: hidden; border-radius: 1.8rem; background: #050709; }
+    .phone__screen img { display: block; width: 100%; height: auto; }
+    .phone__glare { position: absolute; inset: 0; pointer-events: none; border-radius: 1.8rem;
+      background: linear-gradient(115deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,0) 38%, rgba(255,255,255,0) 100%); }
+    .phone--left  { transform: rotate(-4deg); animation-delay: -1.2s; }
+    .phone--right { transform: rotate(4deg);  animation-delay: -2.4s; }
+    .phone:hover { transform: translateY(-8px) rotate(0deg); box-shadow: 0 2px 0 rgba(255,255,255,.2) inset, 0 0 0 1px rgba(255,255,255,.12), 0 40px 70px -20px rgba(0,0,0,.9), 0 0 60px -10px rgba(246,200,76,.45); }
+    .phone__tag { position: absolute; z-index: 3; left: 50%; bottom: -.9rem; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; border-radius: 9999px;
+      border: 1px solid rgba(74,222,128,.35); background: #0b1626; padding: .3rem .7rem;
+      font-size: .625rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #86efac; }
+    .phone__tag i { width: .4rem; height: .4rem; border-radius: 9999px; background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    @keyframes phoneFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+    .relatos-cta { margin-top: 5.5rem; }
+    @media (prefers-reduced-motion: reduce) { .phone { animation: none; } }
     @media (min-width: 768px) {
-      .relatos-alunos__title { font-size: 2rem; }
-      .relatos-alunos__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+      .relatos-alunos__title { font-size: 2.25rem; }
+      .relatos-alunos__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5rem; }
+      .phone { max-width: 16.5rem; }
+      .phone--center { transform: translateY(-1.25rem) scale(1.04); z-index: 2; }
+      .phone--center:hover { transform: translateY(-2rem) scale(1.05); }
+      .relatos-cta { margin-top: 7rem; }
     }
   </style>
 </head>
@@ -215,7 +247,6 @@
         <p class="-mt-2 mb-4 rotate-[-3deg] text-center font-script text-2xl text-gold sm:text-3xl">
           foco no que mais cai!
         </p>
-        </div>
       </div>
     </section>
 
@@ -699,68 +730,77 @@
     <section class="relatos-alunos" aria-labelledby="relatos-alunos-titulo">
       <div class="relatos-alunos__inner">
         <h2 id="relatos-alunos-titulo" class="relatos-alunos__title">
-          De aluno para aluno: <span>mais relatos de quem aprovou</span>
+          De aluno para aluno: <span>mensagens reais de quem já está usando</span>
         </h2>
+        <p class="relatos-alunos__sub">Prints reais das conversas que chegam no nosso WhatsApp todos os dias.</p>
+
         <div class="relatos-alunos__grid">
-          <figure class="relatos-alunos__figure">
-            <img class="relatos-alunos__image" src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/247f2773-f676-4532-913c-b36cbc73c14d/prova1.png" alt="Relato de aluno sobre o PARTIU ENEM e o laboratório de redação" loading="lazy" />
+          <figure class="phone phone--left">
+            <span class="phone__notch"></span>
+            <div class="phone__screen">
+              <img src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/247f2773-f676-4532-913c-b36cbc73c14d/prova1.png" alt="Relato de aluno sobre o laboratório de redação do PARTIU ENEM" loading="lazy" />
+              <span class="phone__glare"></span>
+            </div>
+            <figcaption class="phone__tag"><i></i>Paulo • WhatsApp</figcaption>
           </figure>
-          <figure class="relatos-alunos__figure">
-            <img class="relatos-alunos__image" src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/b873af74-3e25-4f5d-9bc2-ef928d4c9068/prova2.png" alt="Relato de aluna sobre o plano diário de estudos do PARTIU ENEM" loading="lazy" />
+          <figure class="phone phone--center">
+            <span class="phone__notch"></span>
+            <div class="phone__screen">
+              <img src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/b873af74-3e25-4f5d-9bc2-ef928d4c9068/prova2.png" alt="Relato de aluna sobre o plano diário de estudos do PARTIU ENEM" loading="lazy" />
+              <span class="phone__glare"></span>
+            </div>
+            <figcaption class="phone__tag"><i></i>Carol • WhatsApp</figcaption>
           </figure>
-          <figure class="relatos-alunos__figure">
-            <img class="relatos-alunos__image" src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/a0f7b110-e4ae-4713-a5a3-51a216821ad5/prova3.png" alt="Relato de aluno recomendando o PARTIU ENEM" loading="lazy" />
+          <figure class="phone phone--right">
+            <span class="phone__notch"></span>
+            <div class="phone__screen">
+              <img src="https://id-preview--1217845f-7a82-4448-9da4-9b2c7064d9d0.lovable.app/__l5e/assets-v1/a0f7b110-e4ae-4713-a5a3-51a216821ad5/prova3.png" alt="Relato de aluno recomendando o PARTIU ENEM" loading="lazy" />
+              <span class="phone__glare"></span>
+            </div>
+            <figcaption class="phone__tag"><i></i>Gustavo • WhatsApp</figcaption>
           </figure>
         </div>
-      </div>
-    </section>
-<div class="mt-6">
 
-<div class="mt-8 text-center">
-          <div class="mb-4">
+        <!-- CTA logo abaixo dos relatos -->
+        <div class="relatos-cta mx-auto max-w-md text-center">
+          <p class="font-display text-2xl leading-tight text-white uppercase sm:text-3xl">
+            O próximo print <span class="text-gold">pode ser o seu.</span>
+          </p>
+          <p class="mt-3 text-sm leading-relaxed text-slate-300">
+            Comece hoje com o mesmo plano que essa galera está usando para chegar na prova com tudo organizado.
+          </p>
+
+          <div class="mt-6">
             <p class="text-xs font-bold tracking-widest text-slate-400 uppercase">Por apenas:</p>
             <div class="mt-1 flex items-center justify-center gap-1.5">
               <span class="text-2xl font-bold text-gold">R$</span>
               <span class="font-display text-5xl text-white">17,00</span>
             </div>
-            <p class="mt-1 text-xs tracking-wide text-slate-400 uppercase">Pagamento Único • Sem mensalidade • Acesso vitalício</p>
+            <p class="mt-1 text-xs tracking-wide text-slate-400 uppercase">Pagamento único • Sem mensalidade • Acesso vitalício</p>
           </div>
 
-<a
-
-  href="https://pay.hotmart.com/A107355035W?checkoutMode=10"
-
-  target="_blank"
-
-  rel="noopener noreferrer"
-
-  style="display: table; width: auto; margin: 0 auto;"
-
-  class="rounded-xl bg-gold px-6 py-4 text-center text-base font-bold text-navy-900 shadow-md transition-all hover:brightness-110 active:scale-95"
-
->
-
-  <span class="flex items-center justify-center gap-2 whitespace-nowrap">
-
-    <svg class="h-5 w-5 shrink-0 fill-current" viewBox="0 0 24 24">
-
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-
-    </svg>
-
-    VOCÉ SERÁ O PRÓXIMO A COMEMORAR!
-
-  </span>
-
-</a>
+          <a
+            href="https://pay.hotmart.com/A107355035W?checkoutMode=10"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cta="relatos_alunos"
+            class="animate-pulse-gold mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gold px-6 py-4 text-center text-base font-bold text-navy-900 shadow-md transition-all hover:brightness-110 active:scale-95"
+          >
+            <svg class="h-5 w-5 shrink-0 fill-current" viewBox="0 0 24 24">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <span class="whitespace-nowrap">QUERO SER O PRÓXIMO A COMEMORAR</span>
+          </a>
 
           <p class="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400">
             <svg class="h-4 w-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             <span>Compra segura • Entrega imediata no seu e-mail</span>
           </p>
         </div>
-        </div>
-<div class="mt-6">
+      </div>
+    </section>
+
+
 
 
 
@@ -910,6 +950,10 @@
               <svg class="h-4 w-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
               <span>Garantia incondicional de 7 dias com risco zero</span>
             </div>
+          </div>
+        </div>
+      </div>
+      </div>
     </section>
 
     <!-- 9.5 DUAS OPÇÕES (contraste antes/depois) -->
@@ -1292,14 +1336,9 @@
     // 5. Eventos de funil: ViewContent (conteudo visto) + InitiateCheckout (clique real no checkout)
     var hasTrackedIC = false;
 
-    function fbTrack(name, params, once) {
+    function fbTrack(name, params) {
       try {
         if (typeof window.fbq !== 'function') return;
-        var key = 'meta_evt_' + name;
-        if (once) {
-          if (sessionStorage.getItem(key) === 'true') return;
-          sessionStorage.setItem(key, 'true');
-        }
         fbq('track', name, params || {}, { eventID: window.__evtId(name) });
       } catch (e) {
         console.warn('Meta Pixel Tracking Error:', e);
@@ -1319,7 +1358,7 @@
           content_category: 'Educacao / ENEM',
           currency: 'BRL',
           value: 17.00
-        }, true);
+        });
       }
       setTimeout(fire, 2000);
       window.addEventListener('scroll', function onS() {
@@ -1339,7 +1378,7 @@
         value: 17.00,
         num_items: 1,
         cta_location: location || 'cta_button'
-      }, true);
+      });
     }
 
     // Repassa parâmetros de rastreamento (fbclid, gclid, utms, src, sck) para o checkout da Hotmart
@@ -1347,24 +1386,12 @@
       try {
         var params = new URLSearchParams(window.location.search);
 
-        // Se não veio fbclid na URL, tenta recuperar do cookie _fbc (Meta) ou do storage
-        if (!params.get('fbclid')) {
-          var fbcMatch = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/);
-          if (fbcMatch) {
-            var fbcParts = decodeURIComponent(fbcMatch[1]).split('.');
-            if (fbcParts.length >= 4 && fbcParts[3]) {
-              params.set('fbclid', fbcParts[3]);
-            }
-          }
-        }
-        if (!params.get('fbclid')) {
-          try {
-            var saved = localStorage.getItem('partiu_fbclid');
-            if (saved) params.set('fbclid', saved);
-          } catch (e) {}
-        } else {
-          try { localStorage.setItem('partiu_fbclid', params.get('fbclid')); } catch (e) {}
-        }
+        // IMPORTANTE: usamos SOMENTE o fbclid/utm da URL desta visita.
+        // Reaproveitar fbclid salvo (localStorage/cookie _fbc) fazia a Hotmart
+        // atribuir todos os checkouts ao mesmo clique -> tudo caia num criativo so.
+        try {
+          localStorage.removeItem('partiu_fbclid');
+        } catch (e) {}
 
         // Monta a query só com parâmetros úteis de rastreamento
         var allowed = ['fbclid','gclid','ttclid','src','sck','utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id'];
